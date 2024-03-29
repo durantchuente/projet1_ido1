@@ -1,0 +1,36 @@
+.firstColorIcon{
+  color: #127f49;
+  font-size: 40px;
+}
+.secondColorIcon{
+  color: #4e5bb4;
+  font-size: 40px;
+}
+.thirdColorIcon{
+  color: #e20202;
+  font-size: 40px;
+}
+.fouthColorIcon{
+  color: #24bf0f;
+  font-size: 40px;
+}
+.sizeText{
+  font-size: 30px;
+}
+.bigContain{
+  max-width: 340px;
+  margin: auto;
+  padding: 20px;
+}
+.textCenter{
+  text-align: center;
+}
+.headerContainer{
+  background-color: black;
+  color: white;
+}
+.iconDiv{
+  justify-content: end;
+  display: flex;
+  align-items: center;
+}
