@@ -12,8 +12,8 @@
 #define NOTE_B0  31
 
 //define variables
-const char* ssid = "daniel";
-const char* password = "allo1234";
+const char* ssid = "UNIFI_IDO1";
+const char* password = "41Bidules!";
 Sensor dht22Temp("Temperature", 27);
 Sensor dht22Hum("Humidite", 27);
 Sensor gas("Monoxyde de carbonne", 32);
@@ -26,7 +26,38 @@ StaticJsonDocument<100> jsonData;
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 String getContentType(String path);
-
+String loadData(const String& data){
+  if (data == "TEMPERATURE_VALUE")
+    return String(dht22Temp.getData());
+  if (data == "TEMPERATURE_MESSAGE"){
+    if (!dht22Temp.verificationNormalRange(-25, 30))
+      return"Anormal";
+    else
+      return"Normal";
+  }
+  if (data == "HUMIDITY_VALUE")
+    return String(dht22Hum.getData());
+  if (data == "HUMIDITY_MESSAGE"){
+    if (!dht22Hum.verificationNormalRange(25, 80))
+      return"Anormal";
+    else
+      return"Normal";
+  }
+  if (data == "GAS_VALUE")
+    return String(gas.getData());
+  if (data == "GAS_MESSAGE"){
+    if (!gas.verificationNormalRange(250, 450))
+      return"Anormal";
+    else
+      return"Normal";
+  }
+  if (data == "ALARM_VALUE")
+    if (!gas.verificationNormalRange(400, 450) || !dht22Temp.verificationNormalRange(-25, 30) || !dht22Hum.verificationNormalRange(30, 80))
+      return "Desactiver";
+    else
+      return "Activer";
+  return String();
+}
 //function for initialize SPIFFS
 void initSPIFFS() {
   if (!SPIFFS.begin(true)) {
@@ -52,8 +83,8 @@ void setup() {
   Serial.begin(115200);
   initWiFi();
   initSPIFFS();
-  server.begin();
   dht.begin();
+  server.begin();
   pinMode(4, OUTPUT);
   // collect data
   float h = dht.readHumidity();
@@ -63,48 +94,26 @@ void setup() {
   dht22Hum.setData(h);
   gas.setData(gasVal/10);
   // implement routes server
-  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
-    //create json struct in string
-    String buffer;
-    jsonData["temperature"]["value"] = dht22Temp.getData();
-    jsonData["humidity"]["value"] = dht22Hum.getData();
-    jsonData["gas"]["value"] = gas.getData();
-    if (!gas.verificationNormalRange(400, 450)) // verify condition range value
-      jsonData["gas"]["message"] = "Anormal";
-    else
-      jsonData["gas"]["message"] = "Normal";
-
-    if (!dht22Temp.verificationNormalRange(-25, 30))
-      jsonData["temperature"]["message"] = "Anormal";
-    else
-      jsonData["temperature"]["message"] = "Normal";
-
-    if (!dht22Hum.verificationNormalRange(30, 80))
-      jsonData["humidity"]["message"] = "Anormal";
-    else
-      jsonData["humidity"]["message"] = "Normal";
-    serializeJson(jsonData, buffer);
-    request->send(200, "text/plain", buffer);
-    if (!gas.verificationNormalRange(400, 450) || !dht22Temp.verificationNormalRange(-25, 30) || !dht22Temp.verificationNormalRange(30, 80))
-    {
-      digitalWrite(4, HIGH);
-      for (int thisNote = 0; thisNote < 1; thisNote  ) {
-        int noteDuration = 800/noteDurations[thisNote];
-        tone(33, melody[thisNote],noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.30;
-        delay(pauseBetweenNotes);
-      }
-    }else{
-      noTone(33);
-      digitalWrite(4, LOW);
-    }
-  });
   server.onNotFound([](AsyncWebServerRequest *request){
     String path = request->url();
     if(path.endsWith("/")){
       path += "index.html";
     }
-    request->send(SPIFFS, path);
+    request->send(SPIFFS, path, getContentType(path), false, loadData);
+    if (!gas.verificationNormalRange(250, 450) || !dht22Temp.verificationNormalRange(-25, 30) || !dht22Hum.verificationNormalRange(30, 80))
+    {
+      digitalWrite(4, HIGH);
+      // for (int thisNote = 0; thisNote < 1; thisNote  ) {
+      //   int noteDuration = 800/noteDurations[thisNote];
+      tone(33, 1000);
+      //   int pauseBetweenNotes = noteDuration * 1.30;
+      //   delay(pauseBetweenNotes);
+      // }
+    }else{
+      noTone(33);
+      digitalWrite(4, LOW);
+    }
+    
   });
 }
 
